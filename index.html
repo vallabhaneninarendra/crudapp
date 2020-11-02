@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Html Javascript jquery Crud</title>
+   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <input type="hidden" id="id" value="0" />
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-6">
+        <h2>Crud Operation</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6">
+        <table id="userTable"
+               class="table table-bordered table-condensed table-striped">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="select" onchange="checkAll(this)" name="chk[]"></th>
+              <th>Edit</th>
+              <th>Name</th>
+              <th>User Name</th>
+              <th>Email</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6">
+        <button type="button" id="addButton"
+                class="btn btn-primary"
+                onclick="addClick();">
+          Add User
+        </button>
+      </div>
+    </div>
+     <div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+    
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Form</h4>
+        </div>
+        <div class="modal-body">
+              <div class="row">
+      <div class="col-sm-12">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+         Information
+          </div>
+          <div class="panel-body">
+            <div class="form-group">
+              <label for="name">
+                Name
+              </label>
+              <input type="text" id="name"
+                     class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="username">
+                User Name
+              </label>
+              <input type="text" id="username"
+                     class="form-control" />
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email"
+                     class="form-control" />
+            </div>
+          </div>
+          <div class="panel-footer">
+            <div class="row">
+              <div class="col-xs-12">
+                <button type="button" id="updateButton"
+                        class="btn btn-primary"
+                        onclick="updateClick();">
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  </div>
+  <script>
+    $(document).ready(function () {
+      userList();
+    });
+
+    var User = {
+      id: 0,
+      name: "",
+      username: "",
+      email: ""
+    }
+
+    function updateClick() {
+      // Build user object from inputs
+      User = new Object();
+      User.id = $("#id").val();
+      User.name = $("#name").val();
+      User.username = $("#username").val();
+      User.email = $("#email").val();
+
+      if ($("#updateButton").text().trim() == "Add") {
+        userAdd(User);
+      alert('User Added');
+    
+    $('#myModal').modal('hide');
+    return false;
+
+      }
+      else {
+        userUpdate(User);
+         alert('User Updated');
+    
+    $('#myModal').modal('hide');
+    return false;
+
+      }
+    }
+
+    function addClick() {
+      $('#myModal').modal('show');
+
+      formClear();
+    }
+
+    function userUpdate(user) {
+      var url = "https://jsonplaceholder.typicode.com/users/" + user.id;
+
+      // Call Web API to update user
+      $.ajax({
+        url: url,
+        type: 'PUT',
+        contentType: "application/json;charset=utf-8",
+        data: JSON.stringify(user),
+        success: function (user) {
+          userUpdateSuccess(user);
+        },
+        error: function (request, message, error) {
+          handleException(request, message, error);
+        }
+      });
+    }
+
+    function userUpdateSuccess(user) {
+      userUpdateInTable(user);
+    }
+
+    function userAdd(user) {
+      // Call Web API to add a new user 
+      $.ajax({  
+        url: "https://jsonplaceholder.typicode.com/users",
+        type: 'POST',
+        contentType: "application/json;charset=utf-8",
+        data: JSON.stringify(user),
+        success: function (user) {
+        userAddSuccess(user);
+        },
+        error: function (request, message, error) {
+          handleException(request, message, error);
+        }
+      });
+    }
+
+    function userAddSuccess(user) {
+      userAddRow(user);
+      formClear();
+    }
+
+    // Update user in <table>
+    function userUpdateInTable(user) {
+      // Find user in <table>
+      var row = $("#userTable button[data-id='" + user.id + "']")
+                .parents("tr")[0];
+      // Add changed user to table
+      $(row).after(userBuildTableRow(user));
+      // Remove original user
+      $(row).remove();
+
+      // Clear form fields
+      formClear();
+
+      // Change Update Button Text
+      $("#updateButton").text("Add");
+    }
+
+    function userGet(ctl) {
+      // Get user id from data- attribute
+      var id = $(ctl).data("id");
+
+      // Store user id in hidden field
+      $("#id").val(id);
+
+      // Call Web API to get a user
+      $.ajax({
+        url: "https://jsonplaceholder.typicode.com/users/" + id,
+        type: 'GET',
+        dataType: 'json',
+        success: function (user) {
+          userToFields(user);
+
+          // Change Update Button Text
+          $("#myModal").modal('show');
+          $("#updateButton").text("Update");
+        },
+        error: function (request, message, error) {
+          handleException(request, message, error);
+        }
+      });
+    }
+
+    function userToFields(user) {
+      $("#name").val(user.name);
+      $("#username").val(user.username);
+      $("#email").val(user.email);
+    }
+
+    // Get all user to display
+    function userList() {
+      // Call Web API to get a list of user
+      $.ajax({
+        url: 'https://jsonplaceholder.typicode.com/users',
+        type: 'GET',
+        dataType: 'json',
+        success: function (users) {
+          userListSuccess(users);
+        },
+        error: function (request, message, error) {
+          handleException(request, message, error);
+        }
+      });
+    }
+
+    // Display all user returned from Web API call
+    function userListSuccess(users) {
+      // Iterate over the collection of data
+      $.each(users, function (index, user) {
+        // Add a row to the user table
+        userAddRow(user);
+      });
+    }
+
+    // Add user row to <table>
+    function userAddRow(user) {
+      // First check if a <tbody> tag exists, add one if not
+      if ($("#userTable tbody").length == 0) {
+        $("#userTable").append("<tbody></tbody>");
+      }
+
+      // Append row to <table>
+      $("#userTable tbody").append(
+        userBuildTableRow(user));
+    }
+
+    // Build a <tr> for a row of table data
+    function userBuildTableRow(user) {
+      var ret = "<tr>" + "<td>" +
+       "<input type='checkbox'" 
+       + "class='select'"+"name='chk[]'>" 
+       + "</td>" +
+            "<td>" +
+              "<button type='button' " +
+                  "onclick='userGet(this);' " +
+                  "class='btn btn-default' " +
+                  "data-id='" + user.id + "'>" +
+                  "<span class='glyphicon glyphicon-edit' />" +
+              "</button>" +
+            "</td>" +
+            "<td>" + user.name + "</td>" +
+            "<td>" + user.username + "</td>" +
+            "<td>" + user.email + "</td>" +
+            "<td>" +
+              "<button type='button' " +
+                      "onclick='userDelete(this);' " +
+                      "class='btn btn-default' " +
+                      "data-id='" + user.id + "'>" +
+                      "<span class='glyphicon glyphicon-trash' />" +
+              "</button>" +
+            "</td>" +
+          "</tr>";
+
+      return ret;
+    }
+
+    // Delete user from <table>
+    function userDelete(ctl) {
+      var id = $(ctl).data("id");
+
+      // Call Web API to delete a user
+      $.ajax({
+        url: "https://jsonplaceholder.typicode.com/users/" + id,
+        type: 'DELETE',
+        success: function (user) {
+          $(ctl).parents("tr").remove();
+        },
+        error: function (request, message, error) {
+          handleException(request, message, error);
+        }
+      });
+    }
+function checkAll(ele) {
+     var checkboxes = document.getElementsByTagName('input');
+     if (ele.checked) {
+         for (var i = 0; i < checkboxes.length; i++) {
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = true;
+             }
+         }
+     } else {
+         for (var i = 0; i < checkboxes.length; i++) {
+             console.log(i)
+             if (checkboxes[i].type == 'checkbox') {
+                 checkboxes[i].checked = false;
+             }
+         }
+     }
+ }
+    // Clear form fields
+    function formClear() {
+      $("#name").val("");
+      $("#username").val("");
+      $("#email").val("");
+    }
+
+    // Handle exceptions from AJAX calls
+    function handleException(request, message, error) {
+      var msg = "";
+
+      msg += "Code: " + request.status + "\n";
+      msg += "Text: " + request.statusText + "\n";
+      if (request.responseJSON != null) {
+        msg += "Message" + request.responseJSON.Message + "\n";
+      }
+
+      alert(msg);
+    }
+
+  </script>
+</body>
+</html>
